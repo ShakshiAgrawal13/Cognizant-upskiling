@@ -1,0 +1,117 @@
+//Country.java
+package com.example.jpa.entity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
+@Entity
+public class Country {
+
+    @Id
+    private String code;
+    private String name;
+
+    public Country() {
+    }
+
+    public Country(String code, String name) {
+        this.code = code;
+        this.name = name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
+
+//CountryRepository.java
+package com.example.jpa.repository;
+
+import com.example.jpa.entity.Country;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
+
+public interface CountryRepository extends JpaRepository<Country, String> {
+
+    @Query("SELECT c FROM Country c")
+    List<Country> getAllCountriesUsingHQL();
+
+    @Query(value = "SELECT * FROM country", nativeQuery = true)
+    List<Country> getAllCountriesUsingNativeQuery();
+}
+
+
+//CountryService.java
+package com.example.jpa.service;
+
+import com.example.jpa.entity.Country;
+import com.example.jpa.repository.CountryRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CountryService {
+
+    private final CountryRepository repository;
+
+    public CountryService(CountryRepository repository) {
+        this.repository = repository;
+    }
+
+    public Country addCountry(Country country) {
+        return repository.save(country);
+    }
+
+    public List<Country> getCountriesUsingHQL() {
+        return repository.getAllCountriesUsingHQL();
+    }
+
+    public List<Country> getCountriesUsingNativeQuery() {
+        return repository.getAllCountriesUsingNativeQuery();
+    }
+}
+
+
+//JpaApplication.java
+package com.example.jpa;
+
+import com.example.jpa.entity.Country;
+import com.example.jpa.service.CountryService;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class JpaApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(JpaApplication.class, args);
+    }
+
+    @Bean
+    CommandLineRunner run(CountryService service) {
+        return args -> {
+
+            service.addCountry(new Country("IN", "India"));
+            service.addCountry(new Country("US", "United States"));
+            service.addCountry(new Country("JP", "Japan"));
+
+            System.out.println("Countries using HQL:");
+            service.getCountriesUsingHQL().forEach(c ->
+                    System.out.println(c.getCode() + " - " + c.getName()));
+
+            System.out.println("Countries using Native Query:");
+            service.getCountriesUsingNativeQuery().forEach(c ->
+                    System.out.println(c.getCode() + " - " + c.getName()));
+        };
+    }
+}
